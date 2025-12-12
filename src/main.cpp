@@ -80,6 +80,7 @@ int main(int argc, char** argv)
     const float    nms_threshold      = NMS_THRESH;
     const float    box_conf_threshold = BOX_THRESH;
     int            ret;
+    
 
     float f;
     float FPS[16];
@@ -89,20 +90,33 @@ int main(int argc, char** argv)
     for(i=0;i<16;i++) FPS[i]=0.0;
 
     if (argc < 3) {
-        fprintf(stderr,"Usage: %s [model] [imagepath]\n", argv[0]);
+        fprintf(stderr,"Usage: %s imagepath [model] [output]\n", argv[0]);
         return -1;
     }
 
-    char*          model_name = argv[1];
-    const char*    imagepath = argv[2];
+    char*          model_path = NULL;
+    char*          output_path = NULL;
+    const char*    imagepath = argv[1];
 
-    printf("model: %s\n", model_name);
+    if (argc >= 4) {
+        output_path = argv[3];
+        model_path = argv[2];
+    } else{
+        output_path = (char*) "/tmp/yolov5_out.jpg";
+        if (argc == 3) {
+            model_path = argv[2];
+        } else {
+            model_path = (char*) "../rk3588/yolov5n.rknn";
+        }
+    }
+
+    printf("model: %s\n", model_path);
     printf("post process config: box_conf_threshold = %.2f, nms_threshold = %.2f\n", box_conf_threshold, nms_threshold);
 
     // Create the neural network
-    printf("Loading mode...\n");
+    printf("Loading model ...\n");
     int            model_data_size = 0;
-    unsigned char* model_data      = load_model(model_name, model_data_size);
+    unsigned char* model_data      = load_model(model_path, model_data_size);
 
     ret = rknn_init(&ctx, model_data, model_data_size, 0, NULL);
     //no need to hold the model in the buffer. Get some memory back
@@ -180,8 +194,8 @@ int main(int argc, char** argv)
     cv::Mat img;
     cv::Mat resized_img;
 
-    printf("Start grabbing, press ESC on Live window to terminated...\n");
-    while(1){
+    printf("Start grabbing ...\n");
+    for(int k=0; k<20; k++){
 
         orig_img=cv::imread(imagepath, 1);
         if(orig_img.empty()) {
@@ -271,14 +285,14 @@ int main(int argc, char** argv)
         putText(orig_img, cv::format("FPS %0.2f", f/16),cv::Point(10,20),cv::FONT_HERSHEY_SIMPLEX,0.6, cv::Scalar(0, 0, 255));
 
         //show output
-//        std::cout << "FPS" << f/16 << std::endl;
-        imshow("Radxa zero 3W - 1,8 GHz - 4 Mb RAM", orig_img);
-        char esc = cv::waitKey(5);
-        if(esc == 27) break;
-
-        imwrite("./~out.jpg", orig_img);
+        std::cout << "FPS" << f/16 << std::endl;
+        //imshow("Radxa zero 3W - 1,8 GHz - 4 Mb RAM", orig_img);
+        //char esc = cv::waitKey(5);
+        //if(esc == 27) break;
+        //imwrite("./~out.jpg", orig_img);
     }
-
+    printf("Check output: '%s'\n", output_path);
+    imwrite(output_path, orig_img);
     // release
     ret = rknn_destroy(ctx);
 

@@ -16,18 +16,15 @@ find_package(OpenCV REQUIRED)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fexceptions")
 
-set(SOURCES src/main.cpp src/postprocess.cpp)
+set(SOURCES main.cpp postprocess.cpp)
 
 set(LIB_PATH $ENV{RUNTIME_LIB_PATH})
 if(LIB_PATH)
     include_directories(${LIB_PATH}/include) 
-    # set(LIBRKLLMRT ${LIB_PATH}/librkllmrt.so)
     set(LIBRKNNRT ${LIB_PATH}/librknnrt.so)
 endif()
 
 set(EXTRA_LIBS ${OpenCV_LIBS} ${LIBRKNNRT})
-
-set(EXECUTABLE_OUTPUT_PATH "../")
 
 include_directories(include ${OpenCV_INCLUDE_DIRS})
 

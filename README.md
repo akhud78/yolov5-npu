@@ -136,7 +136,7 @@ More info or if you want to connect a camera to the app, follow the instructions
 ## yolov5-npu
 ### Setup
 
-- Cheak libraries
+- Check libraries
 ```
 $ tree /opt/runtime/
 /opt/runtime/
@@ -155,25 +155,30 @@ $ export RUNTIME_LIB_PATH=/opt/runtime  # for example only
 $ export RUNTIME_LIB_PATH=/mnt/datadrive/storage/data/runtime
 $ echo $RUNTIME_LIB_PATH       # check
 ```
-### Clone and build example
+- Clone
 ```
 $ cdp
-$ git clone https://github.com/akhud78/yolov4-npu
+$ git clone https://github.com/akhud78/yolov5-npu
 $ cd yolov5-npu
+```
+
+- Build and test
+```
 $ mkdir build
 $ cd build
-$ cmake ..
+$ cmake ../src
 $ make
-...
-[100%] Built target yolov5_npu
-$ cd ..
+$ ./yolov5_npu
+Usage: ./yolov5_npu imagepath [model] [output]
 ```
+
 ### Run
 ```
-$ ./yolov5_npu rk3588/yolov5n.rknn parking.jpg
-model: rk3588/yolov5n.rknn
+$ ./yolov5_npu ../parking.jpg ../rk3588/yolov5n.rknn
+
+model: ../rk3588/yolov5n.rknn
 post process config: box_conf_threshold = 0.25, nms_threshold = 0.45
-Loading mode...
+Loading model ...
 sdk version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver version: 0.9.8
 
 model input num: 1
@@ -199,9 +204,31 @@ model output num: 3
 model input is NHWC
 model input height=640, width=640, channel=3
 
-Start grabbing, press ESC on Live window to terminated...
+Start grabbing ...
+FPS2.40385
+FPS5.12124
+FPS7.7254
+FPS10.7016
+FPS14.1738
+FPS17.0147
+FPS19.9909
+FPS22.5951
+FPS25.3125
+FPS28.1534
+FPS30.6534
+FPS33.9429
+FPS36.9191
+FPS39.1512
+FPS41.555
+FPS44.396
+FPS44.9683
+FPS45.0918
+FPS44.8025
+FPS44.8025
+Check output: '/tmp/yolov5_out.jpg'
 ```
-- See `./~out.jpg`
 
-![out](out.jpg)
+![yolov5_out](yolov5_out.jpg)
+
+- [run.sh](run.sh) - batch processing of input images
 
