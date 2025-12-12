@@ -1,25 +1,3 @@
-// Copyright (c) 2021 by Rockchip Electronics Co., Ltd. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//
-// Modified by Q-engineering 4-6-2024
-//
-
-/*-------------------------------------------
-                Includes
--------------------------------------------*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,17 +9,14 @@
 #include "postprocess.h"
 #include "rknn_api.h"
 
-/*-------------------------------------------
-                  Functions
--------------------------------------------*/
-
+// Function to print tensor attributes
 static void dump_tensor_attr(rknn_tensor_attr* attr)
 {
-  printf("\tindex=%d, name=%s, \n\t\tn_dims=%d, dims=[%d, %d, %d, %d], \n\t\tn_elems=%d, size=%d, fmt=%s, \n\t\ttype=%s, qnt_type=%s, "
-         "zp=%d, scale=%f\n",
-         attr->index, attr->name, attr->n_dims, attr->dims[0], attr->dims[1], attr->dims[2], attr->dims[3],
-         attr->n_elems, attr->size, get_format_string(attr->fmt), get_type_string(attr->type),
-         get_qnt_type_string(attr->qnt_type), attr->zp, attr->scale);
+    printf("\tindex=%d, name=%s, \n\t\tn_dims=%d, dims=[%d, %d, %d, %d], \n\t\tn_elems=%d, size=%d, fmt=%s, \n\t\ttype=%s, qnt_type=%s, "
+           "zp=%d, scale=%f\n",
+           attr->index, attr->name, attr->n_dims, attr->dims[0], attr->dims[1], attr->dims[2], attr->dims[3],
+           attr->n_elems, attr->size, get_format_string(attr->fmt), get_type_string(attr->type),
+           get_qnt_type_string(attr->qnt_type), attr->zp, attr->scale);
 }
 
 // Function to read binary file into a buffer allocated in memory
@@ -69,9 +44,6 @@ static unsigned char* load_model(const char* filename, int& fileSize) {
     return (unsigned char*) buffer;
 }
 
-/*-------------------------------------------
-                  Main Functions
--------------------------------------------*/
 int main(int argc, char** argv)
 {
     rknn_context   ctx;
@@ -80,15 +52,17 @@ int main(int argc, char** argv)
     const float    nms_threshold      = NMS_THRESH;
     const float    box_conf_threshold = BOX_THRESH;
     int            ret;
-    
 
+    // Variables for FPS calculation
     float f;
     float FPS[16];
     int i, Fcnt=0;
     std::chrono::steady_clock::time_point Tbegin, Tend;
 
+    // Initialize FPS array to zero
     for(i=0;i<16;i++) FPS[i]=0.0;
 
+    // Check if the correct number of arguments is provided
     if (argc < 3) {
         fprintf(stderr,"Usage: %s imagepath [model] [output]\n", argv[0]);
         return -1;
@@ -98,6 +72,7 @@ int main(int argc, char** argv)
     char*          output_path = NULL;
     const char*    imagepath = argv[1];
 
+    // Assign command line arguments to variables
     if (argc >= 4) {
         output_path = argv[3];
         model_path = argv[2];
@@ -110,23 +85,25 @@ int main(int argc, char** argv)
         }
     }
 
+    // Print model and post-processing configuration
     printf("model: %s\n", model_path);
     printf("post process config: box_conf_threshold = %.2f, nms_threshold = %.2f\n", box_conf_threshold, nms_threshold);
 
-    // Create the neural network
+    // Load the model into memory
     printf("Loading model ...\n");
     int            model_data_size = 0;
     unsigned char* model_data      = load_model(model_path, model_data_size);
 
+    // Initialize the RKNN context with the loaded model data
     ret = rknn_init(&ctx, model_data, model_data_size, 0, NULL);
-    //no need to hold the model in the buffer. Get some memory back
-    free(model_data);
+    free(model_data); // Free memory after initialization
 
     if (ret < 0) {
         printf("rknn_init error ret=%d\n", ret);
         return -1;
     }
 
+    // Get SDK and driver version
     rknn_sdk_version version;
     ret = rknn_query(ctx, RKNN_QUERY_SDK_VERSION, &version, sizeof(rknn_sdk_version));
     if (ret < 0) {
@@ -135,6 +112,7 @@ int main(int argc, char** argv)
     }
     printf("sdk version: %s driver version: %s\n", version.api_version, version.drv_version);
 
+    // Get input and output tensor attributes
     rknn_input_output_num io_num;
     ret = rknn_query(ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));
     if (ret < 0) {
@@ -142,6 +120,8 @@ int main(int argc, char** argv)
         return -1;
     }
     printf("\nmodel input num: %d\n", io_num.n_input);
+
+    // Dump input tensor attributes
     rknn_tensor_attr input_attrs[io_num.n_input];
     memset(input_attrs, 0, sizeof(input_attrs));
     for(uint32_t i = 0; i < io_num.n_input; i++) {
@@ -155,6 +135,8 @@ int main(int argc, char** argv)
     }
 
     printf("\nmodel output num: %d\n", io_num.n_output);
+
+    // Dump output tensor attributes
     rknn_tensor_attr output_attrs[io_num.n_output];
     memset(output_attrs, 0, sizeof(output_attrs));
     for (uint32_t i = 0; i < io_num.n_output; i++) {
@@ -163,6 +145,7 @@ int main(int argc, char** argv)
         dump_tensor_attr(&(output_attrs[i]));
     }
 
+    // Determine input dimensions
     int channel = 3;
     int width   = 0;
     int height  = 0;
@@ -171,16 +154,17 @@ int main(int argc, char** argv)
         channel = input_attrs[0].dims[1];
         height  = input_attrs[0].dims[2];
         width   = input_attrs[0].dims[3];
-    }
-    else {
+    } else {
         printf("\nmodel input is NHWC\n");
         height  = input_attrs[0].dims[1];
         width   = input_attrs[0].dims[2];
         channel = input_attrs[0].dims[3];
     }
 
+    // Print model input dimensions
     printf("model input height=%d, width=%d, channel=%d\n\n", height, width, channel);
 
+    // Prepare input buffer
     rknn_input inputs[1];
     memset(inputs, 0, sizeof(inputs));
     inputs[0].index        = 0;
@@ -189,7 +173,7 @@ int main(int argc, char** argv)
     inputs[0].fmt          = RKNN_TENSOR_NHWC;
     inputs[0].pass_through = 0;
 
-    // You may not need resize when src resulotion equals to dst resulotion
+    // Load and preprocess image
     cv::Mat orig_img;
     cv::Mat img;
     cv::Mat resized_img;
@@ -209,7 +193,7 @@ int main(int argc, char** argv)
         img_width  = img.cols;
         img_height = img.rows;
 
-        //check sizes
+        // Check if resizing is needed
         if (img_width != width || img_height != height) {
             cv::resize(img,resized_img,cv::Size(width,height));
             inputs[0].buf = (void*)resized_img.data;
@@ -217,8 +201,10 @@ int main(int argc, char** argv)
             inputs[0].buf = (void*)img.data;
         }
 
+        // Set input to the neural network context
         rknn_inputs_set(ctx, io_num.n_input, inputs);
 
+        // Prepare output buffer
         rknn_output outputs[io_num.n_output];
         memset(outputs, 0, sizeof(outputs));
         for (uint32_t i = 0; i < io_num.n_output; i++) {
@@ -226,10 +212,11 @@ int main(int argc, char** argv)
             outputs[i].want_float = 0;
         }
 
+        // Run the neural network inference
         rknn_run(ctx, NULL);
         rknn_outputs_get(ctx, io_num.n_output, outputs, NULL);
 
-        // post process
+        // Post-process the output to get detection results
         float scale_w = (float)width / img_width;
         float scale_h = (float)height / img_height;
 
@@ -244,8 +231,7 @@ int main(int argc, char** argv)
         post_process((int8_t *)outputs[0].buf, (int8_t *)outputs[1].buf, (int8_t *)outputs[2].buf, height, width,
                    box_conf_threshold, nms_threshold, scale_w, scale_h, out_zps, out_scales, &detect_result_group);
 
-
-        // Draw Objects
+        // Draw detected objects on the image
         char text[256];
         for (int i = 0; i < detect_result_group.count; i++) {
             detect_result_t* det_result = &(detect_result_group.results[i]);
@@ -255,9 +241,6 @@ int main(int argc, char** argv)
             int x2 = det_result->box.right;
             int y2 = det_result->box.bottom;
             cv::rectangle(orig_img, cv::Point(x1, y1), cv::Point(x2, y2),cv::Scalar(255, 0, 0));
-
-//            printf("%s @ (%d %d %d %d) %f\n", det_result->name, det_result->box.left, det_result->box.top,
-//                   det_result->box.right, det_result->box.bottom, det_result->prop);
 
             //put some text
             sprintf(text, "%s %.1f%%", det_result->name, det_result->prop * 100);
@@ -275,26 +258,27 @@ int main(int argc, char** argv)
             cv::putText(orig_img, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
         }
 
+        // Release output buffers
         ret = rknn_outputs_release(ctx, io_num.n_output, outputs);
 
         Tend = std::chrono::steady_clock::now();
-        //calculate frame rate
+
+        // Calculate and display FPS
         f = std::chrono::duration_cast <std::chrono::milliseconds> (Tend - Tbegin).count();
-        if(f>0.0) FPS[((Fcnt++)&0x0F)]=1000.0/f;
-        for(f=0.0, i=0;i<16;i++){ f+=FPS[i]; }
+        if(f > 0.0) FPS[((Fcnt++)&0x0F)] = 1000.0 / f;
+        for(f=0.0, i=0;i<16;i++){ f += FPS[i]; }
         putText(orig_img, cv::format("FPS %0.2f", f/16),cv::Point(10,20),cv::FONT_HERSHEY_SIMPLEX,0.6, cv::Scalar(0, 0, 255));
 
-        //show output
-        std::cout << "FPS" << f/16 << std::endl;
-        //imshow("Radxa zero 3W - 1,8 GHz - 4 Mb RAM", orig_img);
-        //char esc = cv::waitKey(5);
-        //if(esc == 27) break;
-        //imwrite("./~out.jpg", orig_img);
+        // Display and save the output image
+        std::cout << "FPS: " << f / 16 << std::endl;
     }
+
     printf("Check output: '%s'\n", output_path);
     imwrite(output_path, orig_img);
-    // release
+
+    // Release resources
     ret = rknn_destroy(ctx);
 
     return 0;
 }
+
