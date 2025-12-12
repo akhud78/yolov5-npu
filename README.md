@@ -2,13 +2,10 @@
 
 ## YoloV5 for RK3566/68/88 NPU (Rock 5, Orange Pi 5, Radxa Zero 3)
 
-Special made for the NPU, see [Q-engineering deep learning examples](https://qengineering.eu/deep-learning-examples-on-raspberry-32-64-os.html)
-
 ------------
 
 ## Model performance benchmark (FPS)
 
-All models, with C++ examples can be found on the SD images.<br><br>
 
 All models are quantized to **int8**, unless otherwise noted.<br>
 
@@ -53,12 +50,8 @@ All models are quantized to **int8**, unless otherwise noted.<br>
 
 ------------
 
-## Dependencies.
-To run the application, you have to:
-- OpenCV 64-bit installed.
-- Optional: Code::Blocks. (```$ sudo apt-get install codeblocks```)
-
-### Installing the dependencies.
+## Dependencies
+### Installing the dependencies
 Start with the usual 
 ```
 $ sudo apt-get update 
@@ -66,7 +59,10 @@ $ sudo apt-get upgrade
 $ sudo apt-get install cmake wget curl
 ```
 #### OpenCV
-Follow the Raspberry Pi 4 [guide](https://qengineering.eu/install-opencv-on-raspberry-64-os.html).<br>
+- Install [OpenCV](https://docs.opencv.org/4.5.4/) 4.5.4
+```
+$ sudo apt install libopencv-dev
+```
 
 #### RKNPU2
 ```
@@ -91,9 +87,9 @@ rknn-toolkit2-master
                     └── rknn_matmul_api.h
 
 $ cd ~/rknn-toolkit2-master/rknpu2/runtime/Linux/librknn_api/aarch64
-$ sudo cp ./librknnrt.so /usr/local/lib
+$ sudo cp ./librknnrt.so /opt/runtime
 $ cd ~/rknn-toolkit2-master/rknpu2/runtime/Linux/librknn_api/include
-$ sudo cp ./rknn_* /usr/local/include
+$ sudo cp ./rknn_* /opt/runtime
 ```
 Save 2 GB of disk space by removing the toolkit. We do not need it anymore.
 ```
@@ -101,58 +97,23 @@ $ cd ~
 $ sudo rm -rf ./rknn-toolkit2-master
 ```
 
-------------
-
-## Installing the app.
-To extract and run the network in Code::Blocks <br/>
-```
-$ mkdir *MyDir* <br/>
-$ cd *MyDir* <br/>
-$ git clone https://github.com/Qengineering/YoloV5-NPU.git <br/>
-```
-
-------------
-
-## Running the app.
-You can use **Code::Blocks**.
-- Load the project file *.cbp in Code::Blocks.
-- Select _Release_, not Debug.
-- Compile and run with F9.
-- You can alter command line arguments with _Project -> Set programs arguments..._ 
-
-Or use **Cmake**.
-```
-$ cd *MyDir*
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make -j4
-```
-Make sure you use the model fitting your system.<br><br>
-
-More info or if you want to connect a camera to the app, follow the instructions at [Hands-On](https://qengineering.eu/deep-learning-examples-on-raspberry-32-64-os.html#HandsOn).<br/><br/>
-
-------------
-## yolov5-npu
-### Setup
+## Setup
 
 - Check libraries
 ```
 $ tree /opt/runtime/
 /opt/runtime/
 ├── include
-│   ├── rkllm.h
 │   ├── rknn_api.h
 │   ├── rknn_custom_op.h
 │   └── rknn_matmul_api.h
-├── librkllmrt.so
 └── librknnrt.so
 ```
 
 - Set `RUNTIME_LIB_PATH` environment variable
 ```
-$ export RUNTIME_LIB_PATH=/opt/runtime  # for example only
-$ export RUNTIME_LIB_PATH=/mnt/datadrive/storage/data/runtime
+$ export RUNTIME_LIB_PATH=/opt/runtime 
+$ export RUNTIME_LIB_PATH=/mnt/datadrive/storage/data/runtime # for example
 $ echo $RUNTIME_LIB_PATH       # check
 ```
 - Clone
@@ -172,7 +133,7 @@ $ ./yolov5_npu
 Usage: ./yolov5_npu imagepath [model] [output]
 ```
 
-### Run
+## Run
 ```
 $ ./yolov5_npu ../parking.jpg ../rk3588/yolov5n.rknn
 
