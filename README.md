@@ -118,7 +118,6 @@ $ echo $RUNTIME_LIB_PATH       # check
 ```
 - Clone
 ```
-$ cdp
 $ git clone https://github.com/akhud78/yolov5-npu
 $ cd yolov5-npu
 ```
